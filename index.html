@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevToolsHelper Support</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background-color: #f7f7f8;
+        color: #1f1f24;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 12px 40px rgba(31, 31, 36, 0.15);
+        padding: 32px;
+        max-width: 420px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      h1 {
+        margin-top: 0;
+        margin-bottom: 4px;
+        font-size: 1.8rem;
+      }
+
+      p {
+        margin-top: 0;
+        margin-bottom: 24px;
+        color: #494954;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #d6d6de;
+        font-size: 1rem;
+        font-family: inherit;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease;
+      }
+
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #4177ff;
+        box-shadow: 0 0 0 3px rgba(65, 119, 255, 0.15);
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 120px;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 16px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        background: linear-gradient(135deg, #4177ff, #6a5bff);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+        font-family: inherit;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .message {
+        margin-top: 16px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        display: none;
+      }
+
+      .message.success {
+        background: #e5f7ed;
+        color: #0a7a2d;
+        border: 1px solid rgba(10, 122, 45, 0.25);
+      }
+
+      .message.error {
+        background: #fdeaea;
+        color: #bb1d1d;
+        border: 1px solid rgba(187, 29, 29, 0.25);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Contact Support</h1>
+      <p>
+        Fill out the form so we can help with DevToolsHelper. We will follow up
+        using the email you provide.
+      </p>
+      <form id="support-form">
+        <label for="title">Title</label>
+        <input
+          type="text"
+          id="title"
+          name="title"
+          placeholder="Briefly describe the issue"
+          required
+          maxlength="120"
+        />
+
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          name="description"
+          placeholder="Details about your request or suggestion"
+          required
+          maxlength="2000"
+        ></textarea>
+
+        <label for="email">Email address</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="you@example.com"
+          required
+        />
+
+        <button type="submit">Надіслати</button>
+      </form>
+      <div id="message" class="message"></div>
+    </main>
+
+    <script>
+      (function () {
+        const form = document.getElementById("support-form");
+        const messageBox = document.getElementById("message");
+        const submitButton = form.querySelector("button[type='submit']");
+
+        const FUNCTION_BASE_URL =
+          "https://todopointshelpers.azurewebsites.net/api/SendQuestionsDevToolsHelperFunction";
+
+        function showMessage(text, isError = false) {
+          messageBox.textContent = text;
+          messageBox.className = "message " + (isError ? "error" : "success");
+          messageBox.style.display = "block";
+        }
+
+        function clearMessage() {
+          messageBox.style.display = "none";
+          messageBox.textContent = "";
+          messageBox.className = "message";
+        }
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          clearMessage();
+          submitButton.disabled = true;
+
+          const formData = new FormData(form);
+          const title = formData.get("title")?.trim();
+          const description = formData.get("description")?.trim();
+          const email = formData.get("email")?.trim();
+
+          if (!title || !description || !email) {
+            showMessage("Please fill in all fields.", true);
+            submitButton.disabled = false;
+            return;
+          }
+
+          const params = new URLSearchParams({
+            title,
+            description,
+            email,
+          });
+
+          const requestUrl = FUNCTION_BASE_URL + "?" + params.toString();
+
+          try {
+            const response = await fetch(requestUrl, {
+              method: "GET",
+            });
+
+            if (!response.ok) {
+              throw new Error("Function returned non-OK response");
+            }
+
+            showMessage("Thanks! Your request has been sent.");
+            form.reset();
+          } catch (error) {
+            console.error(error);
+            showMessage(
+              "We could not send the form. Please try again in a few minutes.",
+              true
+            );
+          } finally {
+            submitButton.disabled = false;
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
+
+
